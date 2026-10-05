@@ -8,6 +8,14 @@
     "category": "Utilities",
     "versions": [
       {
+        "version": "1.0.0.2",
+        "changelog": "Automated Direct Play Guard build from 3047d27.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/St3venSmith/St3venSmith/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.2.zip",
+        "timestamp": "2026-10-05T23:35:46Z",
+        "checksum": "B01F8F273B62E9928F5C00FDD4B99321"
+      },
+      {
         "version": "1.0.0.1",
         "changelog": "Fix Jellyfin 12 browser compatibility errors so MEDIA_NOT_SUPPORTED dialogs are replaced with the configured Direct Play Guard guidance. Keeps the NoCompatibleStream API hook as a fallback.",
         "targetAbi": "12.0.0.0",
