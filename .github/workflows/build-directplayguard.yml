@@ -69,12 +69,18 @@ jobs:
           unzip -q /tmp/directplayguard-source.zip -d /tmp/directplayguard-src
           test -f /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Jellyfin.Plugin.DirectPlayGuard.csproj
 
-      - name: Install robust Jellyfin Web injection patch
+      - name: Install Direct Play Guard compatibility patches
         shell: bash
         run: |
           set -euo pipefail
           cp Jellyfin.Plugin.DirectPlayGuard/patches/WebInjectionStartupFilter.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/WebInjectionStartupFilter.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/FileTransformationIntegration.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/FileTransformationIntegration.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/PluginServiceRegistrator.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/PluginServiceRegistrator.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/PolicyEnforcementService.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Services/PolicyEnforcementService.cs
 
       - name: Apply Jellyfin 12 playback error fix and version
         shell: bash
@@ -93,6 +99,14 @@ jobs:
           project = re.sub(r"<Version>[^<]+</Version>", f"<Version>{version}</Version>", project)
           project = re.sub(r"<AssemblyVersion>[^<]+</AssemblyVersion>", f"<AssemblyVersion>{version}</AssemblyVersion>", project)
           project = re.sub(r"<FileVersion>[^<]+</FileVersion>", f"<FileVersion>{version}</FileVersion>", project)
+
+          if "Newtonsoft.Json" not in project:
+              project = project.replace(
+                  '    <PackageReference Include="Jellyfin.Model" Version="12.0.0" />',
+                  '    <PackageReference Include="Jellyfin.Model" Version="12.0.0" />\\n'
+                  '    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />'
+              )
+
           csproj.write_text(project, encoding="utf-8")
 
           controller = root / "Api" / "ClientController.cs"
