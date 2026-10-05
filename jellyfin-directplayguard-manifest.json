@@ -8,12 +8,12 @@
     "category": "Utilities",
     "versions": [
       {
-        "version": "1.0.0.0",
-        "changelog": "Initial Jellyfin 12 release. Disables video/audio transcoding, optional strict Direct Play mode, permission restore, new-user enforcement, and custom Jellyfin Web compatibility guidance.",
+        "version": "1.0.0.1",
+        "changelog": "Fix Jellyfin 12 browser compatibility errors so MEDIA_NOT_SUPPORTED dialogs are replaced with the configured Direct Play Guard guidance. Keeps the NoCompatibleStream API hook as a fallback.",
         "targetAbi": "12.0.0.0",
-        "sourceUrl": "https://raw.githubusercontent.com/St3venSmith/St3venSmith/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip",
-        "timestamp": "2026-10-05T23:02:10Z",
-        "checksum": "DDD67CD1CFC0FC4174EFD28868A956D4"
+        "sourceUrl": "https://raw.githubusercontent.com/St3venSmith/St3venSmith/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.1.zip",
+        "timestamp": "2026-10-05T23:30:56Z",
+        "checksum": "8D992167FD6B77DBD5831B2B794F1F59"
       }
     ]
   }
