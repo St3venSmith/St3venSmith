@@ -68,6 +68,13 @@ jobs:
           unzip -q /tmp/directplayguard-source.zip -d /tmp/directplayguard-src
           test -f /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Jellyfin.Plugin.DirectPlayGuard.csproj
 
+      - name: Install robust Jellyfin Web injection patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/WebInjectionStartupFilter.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/WebInjectionStartupFilter.cs
+
       - name: Apply Jellyfin 12 playback error fix and version
         shell: bash
         run: |
