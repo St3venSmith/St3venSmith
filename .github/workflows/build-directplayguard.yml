@@ -1,0 +1,107 @@
+name: Build Direct Play Guard
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-directplayguard.yml"
+      - "Jellyfin.Plugin.DirectPlayGuard/source/**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Reconstruct source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat Jellyfin.Plugin.DirectPlayGuard/source/source.b64.part* > /tmp/directplayguard-source.b64
+          base64 --decode /tmp/directplayguard-source.b64 > /tmp/directplayguard-source.zip
+          mkdir -p /tmp/directplayguard-src
+          unzip -q /tmp/directplayguard-source.zip -d /tmp/directplayguard-src
+          test -f /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Jellyfin.Plugin.DirectPlayGuard.csproj
+
+      - name: Build Jellyfin 12 plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Jellyfin.Plugin.DirectPlayGuard.csproj
+          dotnet publish /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Jellyfin.Plugin.DirectPlayGuard.csproj \
+            -c Release \
+            -o /tmp/directplayguard-publish
+          test -f /tmp/directplayguard-publish/Jellyfin.Plugin.DirectPlayGuard.dll
+
+      - name: Package plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Jellyfin.Plugin.DirectPlayGuard/release
+          rm -f Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip
+          cd /tmp/directplayguard-publish
+          zip -j "$GITHUB_WORKSPACE/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip" Jellyfin.Plugin.DirectPlayGuard.dll
+
+      - name: Generate Jellyfin repository manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKSUM="$(md5sum Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip | awk '{print toupper($1)}')"
+          TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          SOURCE_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip"
+          python3 - "$CHECKSUM" "$TIMESTAMP" "$SOURCE_URL" <<'PY'
+          import json
+          import sys
+
+          checksum, timestamp, source_url = sys.argv[1:4]
+          manifest = [
+              {
+                  "guid": "b7c890c3-0f38-4fd8-a925-3a8b79e2a4c1",
+                  "name": "Direct Play Guard",
+                  "overview": "Disables Jellyfin transcoding and guides users toward Direct Play compatible apps.",
+                  "description": "Jellyfin 12 plugin that disables video and audio transcoding, optionally disables remuxing for strict Direct Play, restores original user permissions when disabled, and shows a custom unsupported-client message in Jellyfin Web.",
+                  "owner": "St3venSmith",
+                  "category": "Utilities",
+                  "versions": [
+                      {
+                          "version": "1.0.0.0",
+                          "changelog": "Initial Jellyfin 12 release. Disables video/audio transcoding, optional strict Direct Play mode, permission restore, new-user enforcement, and custom Jellyfin Web compatibility guidance.",
+                          "targetAbi": "12.0.0.0",
+                          "sourceUrl": source_url,
+                          "timestamp": timestamp,
+                          "checksum": checksum
+                      }
+                  ]
+              }
+          ]
+
+          with open("jellyfin-directplayguard-manifest.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Publish installable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip jellyfin-directplayguard-manifest.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit -m "Build Direct Play Guard 1.0.0.0"
+          git push
