@@ -1,0 +1,20 @@
+[
+  {
+    "guid": "b7c890c3-0f38-4fd8-a925-3a8b79e2a4c1",
+    "name": "Direct Play Guard",
+    "overview": "Disables Jellyfin transcoding and guides users toward Direct Play compatible apps.",
+    "description": "Jellyfin 12 plugin that disables video and audio transcoding, optionally disables remuxing for strict Direct Play, restores original user permissions when disabled, and shows a custom unsupported-client message in Jellyfin Web.",
+    "owner": "St3venSmith",
+    "category": "Utilities",
+    "versions": [
+      {
+        "version": "1.0.0.0",
+        "changelog": "Initial Jellyfin 12 release. Disables video/audio transcoding, optional strict Direct Play mode, permission restore, new-user enforcement, and custom Jellyfin Web compatibility guidance.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/St3venSmith/St3venSmith/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.0.zip",
+        "timestamp": "2026-10-05T23:02:10Z",
+        "checksum": "DDD67CD1CFC0FC4174EFD28868A956D4"
+      }
+    ]
+  }
+]
