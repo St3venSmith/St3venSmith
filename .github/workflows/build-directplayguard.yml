@@ -103,8 +103,9 @@ jobs:
           if "Newtonsoft.Json" not in project:
               project = project.replace(
                   '    <PackageReference Include="Jellyfin.Model" Version="12.0.0" />',
-                  '    <PackageReference Include="Jellyfin.Model" Version="12.0.0" />\\n'
-                  '    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />'
+                  '    <PackageReference Include="Jellyfin.Model" Version="12.0.0" />'
+                  + chr(10)
+                  + '    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" ExcludeAssets="runtime" />'
               )
 
           csproj.write_text(project, encoding="utf-8")
