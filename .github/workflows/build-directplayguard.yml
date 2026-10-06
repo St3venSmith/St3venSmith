@@ -81,6 +81,12 @@ jobs:
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/WebInjectionStartupFilter.cs
           cp Jellyfin.Plugin.DirectPlayGuard/patches/ClientController.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Api/ClientController.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/ImageController.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Api/ImageController.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/PluginConfiguration.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Configuration/PluginConfiguration.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/configPage.html \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Configuration/configPage.html
           cp Jellyfin.Plugin.DirectPlayGuard/patches/FileTransformationIntegration.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/FileTransformationIntegration.cs
           cp Jellyfin.Plugin.DirectPlayGuard/patches/PluginServiceRegistrator.cs \
