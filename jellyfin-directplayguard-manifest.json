@@ -8,6 +8,14 @@
     "category": "Utilities",
     "versions": [
       {
+        "version": "1.0.0.13",
+        "changelog": "Automated Direct Play Guard build from aa8f08c.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://raw.githubusercontent.com/St3venSmith/St3venSmith/main/Jellyfin.Plugin.DirectPlayGuard/release/DirectPlayGuard_1.0.0.13.zip",
+        "timestamp": "2026-10-06T02:13:14Z",
+        "checksum": "5675AFBF00DD60A6548E0098E094FCB3"
+      },
+      {
         "version": "1.0.0.12",
         "changelog": "Automated Direct Play Guard build from 55dd6d7.",
         "targetAbi": "12.0.0.0",
