@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Direct Play Guard</title>
+    <style>
+        .dpgSection { margin-bottom: 2rem; }
+        .dpgLead { opacity:.86; line-height:1.5; max-width:70rem; }
+        .dpgNote { border-left:3px solid #00a4dc; padding:.8rem 1rem; margin:1rem 0; background:rgba(0,164,220,.08); line-height:1.5; }
+        .dpgWarning { border-left-color:#e59b23; background:rgba(229,155,35,.08); }
+        .dpgTextarea { width:100%; min-height:7rem; box-sizing:border-box; }
+        .dpgGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1rem; }
+        .dpgImagePanel { border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:1rem; background:rgba(255,255,255,.035); }
+        .dpgPreviewWrap { min-height:120px; display:flex; align-items:center; justify-content:center; border:1px dashed rgba(255,255,255,.18); border-radius:10px; padding:1rem; margin:.8rem 0; overflow:hidden; }
+        .dpgPreview { display:none; max-width:100%; max-height:240px; object-fit:contain; border-radius:10px; }
+        .dpgStatus { opacity:.8; margin:.5rem 0; min-height:1.2em; }
+        .dpgInlineButtons { display:flex; flex-wrap:wrap; gap:.65rem; margin-top:.75rem; }
+        .dpgMiniButton { width:auto!important; min-width:8rem; }
+        .dpgRangeRow { display:grid; grid-template-columns:1fr 7rem; gap:.75rem; align-items:center; }
+        .dpgColorRow { display:flex; gap:.75rem; align-items:center; }
+        .dpgColorRow input[type="color"] { width:4.5rem; height:2.5rem; padding:0; border:0; background:transparent; }
+        .dpgSubheading { font-size:1.1rem; margin:1.25rem 0 .5rem; }
+    </style>
+</head>
+<body>
+<div id="DirectPlayGuardConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="DirectPlayGuardConfigForm">
+                <div class="verticalSection dpgSection">
+                    <h2 class="sectionTitle">Transcoding policy</h2>
+                    <p class="dpgLead">Block CPU/GPU-heavy re-encoding while keeping lightweight remux/direct-stream available unless Strict Direct Play is enabled.</p>
+
+                    <label class="checkboxContainer">
+                        <input id="Enabled" type="checkbox" is="emby-checkbox" />
+                        <span>Enable Direct Play Guard</span>
+                    </label>
+
+                    <label class="checkboxContainer">
+                        <input id="DisableVideoTranscoding" type="checkbox" is="emby-checkbox" />
+                        <span>Disable video transcoding</span>
+                    </label>
+
+                    <label class="checkboxContainer">
+                        <input id="DisableAudioTranscoding" type="checkbox" is="emby-checkbox" />
+                        <span>Disable audio transcoding</span>
+                    </label>
+
+                    <label class="checkboxContainer">
+                        <input id="DisableRemuxing" type="checkbox" is="emby-checkbox" />
+                        <span>Strict Direct Play only — also disable conversion without re-encoding</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">Recommended: leave this off. Remuxing/direct stream keeps the original codecs and is far lighter than transcoding.</div>
+
+                    <label class="checkboxContainer">
+                        <input id="ApplyToAdministrators" type="checkbox" is="emby-checkbox" />
+                        <span>Apply the policy to administrator accounts too</span>
+                    </label>
+                </div>
+
+                <div class="verticalSection dpgSection">
+                    <h2 class="sectionTitle">Unsupported-client popup</h2>
+                    <p class="dpgLead">Customize the message Jellyfin Web shows when a client cannot play the original media. GIFs stay animated because the original uploaded file is served directly.</p>
+
+                    <label class="checkboxContainer">
+                        <input id="EnableWebMessage" type="checkbox" is="emby-checkbox" />
+                        <span>Show the custom message in Jellyfin Web</span>
+                    </label>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MessageTitle">Title</label>
+                        <input id="MessageTitle" type="text" is="emby-input" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="MessageText">Message</label>
+                        <textarea id="MessageText" is="emby-input" class="dpgTextarea"></textarea>
+                    </div>
+
+                    <label class="checkboxContainer">
+                        <input id="ShowRecommendedApps" type="checkbox" is="emby-checkbox" />
+                        <span>Show recommended apps</span>
+                    </label>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="RecommendedApps">Recommended apps</label>
+                        <textarea id="RecommendedApps" is="emby-input" class="dpgTextarea"></textarea>
+                        <div class="fieldDescription">Use one app per line. Lines like <strong>Computer: Jellyfin Media Player</strong> are automatically formatted into clean label/value rows.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="HelpUrl">Apps/download link</label>
+                        <input id="HelpUrl" type="url" is="emby-input" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FooterText">Optional footer text</label>
+                        <input id="FooterText" type="text" is="emby-input" placeholder="Example: Need help? Contact the server admin." />
+                    </div>
+                </div>
+
+                <div class="verticalSection dpgSection">
+                    <h2 class="sectionTitle">Image / GIF</h2>
+                    <p class="dpgLead">Use an uploaded PNG, JPG, GIF, or WebP, or point to an HTTPS image URL. Uploaded files are stored in Jellyfin's data directory so plugin updates do not delete them.</p>
+
+                    <div class="dpgGrid">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="ImageMode">Image source</label>
+                            <select id="ImageMode" is="emby-select">
+                                <option value="none">No image</option>
+                                <option value="upload">Uploaded image / GIF</option>
+                                <option value="url">Image URL</option>
+                            </select>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="ImageFit">Image fit</label>
+                            <select id="ImageFit" is="emby-select">
+                                <option value="contain">Contain — show the whole image</option>
+                                <option value="cover">Cover — fill the image area</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="dpgImagePanel">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ImageUrl">Image URL</label>
+                            <input id="ImageUrl" type="url" is="emby-input" placeholder="https://example.com/sad-cat.gif" />
+                            <div class="fieldDescription">Used only when Image source is set to Image URL.</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ImageUpload">Upload image / GIF</label>
+                            <input id="ImageUpload" type="file" accept="image/png,image/jpeg,image/gif,image/webp,.png,.jpg,.jpeg,.gif,.webp" />
+                            <div class="fieldDescription">PNG, JPG/JPEG, animated GIF, or WebP. Maximum 10 MB.</div>
+                        </div>
+
+                        <div class="dpgInlineButtons">
+                            <button id="UploadImageButton" is="emby-button" type="button" class="raised button-submit emby-button dpgMiniButton">Upload</button>
+                            <button id="RemoveImageButton" is="emby-button" type="button" class="raised emby-button dpgMiniButton">Remove upload</button>
+                        </div>
+                        <div id="ImageStatus" class="dpgStatus"></div>
+
+                        <div class="dpgPreviewWrap">
+                            <img id="ImagePreview" class="dpgPreview" alt="Direct Play Guard image preview" />
+                            <span id="ImagePreviewEmpty">No image selected</span>
+                        </div>
+                    </div>
+
+                    <div class="dpgGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ImageMaxHeight">Maximum image height (px)</label>
+                            <input id="ImageMaxHeight" type="number" min="80" max="600" step="10" is="emby-input" />
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ImageCornerRadius">Image corner radius (px)</label>
+                            <input id="ImageCornerRadius" type="number" min="0" max="60" step="1" is="emby-input" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="verticalSection dpgSection">
+                    <h2 class="sectionTitle">Popup appearance</h2>
+
+                    <div class="dpgGrid">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ModalWidth">Popup width (px)</label>
+                            <input id="ModalWidth" type="number" min="360" max="1000" step="10" is="emby-input" />
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="TextAlignment">Title and message alignment</label>
+                            <select id="TextAlignment" is="emby-select">
+                                <option value="center">Center</option>
+                                <option value="left">Left</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="AccentColor">Accent color</label>
+                        <div class="dpgColorRow">
+                            <input id="AccentColorPicker" type="color" value="#00a4dc" />
+                            <input id="AccentColor" type="text" is="emby-input" placeholder="#00A4DC" />
+                        </div>
+                    </div>
+
+                    <div class="dpgNote">
+                        Uploaded GIFs are not converted or resized by the server, so animation is preserved. The popup only constrains the display size in CSS.
+                    </div>
+
+                    <div class="dpgNote dpgWarning">
+                        <strong>Native client limitation:</strong> Direct Play Guard can block transcoding for every client, but this custom popup is for Jellyfin Web and webview-based clients. Native TV/mobile apps normally use their own playback-error UI.
+                    </div>
+                </div>
+
+                <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                    <span>Save</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+    (function () {
+        var pluginId = 'b7c890c3-0f38-4fd8-a925-3a8b79e2a4c1';
+        var page = document.querySelector('#DirectPlayGuardConfigPage');
+        var form = document.querySelector('#DirectPlayGuardConfigForm');
+        var currentConfig = null;
+
+        function byId(id) { return document.getElementById(id); }
+
+        function clampNumber(value, min, max, fallback) {
+            var n = parseInt(value, 10);
+            return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+        }
+
+        function normalizedColor(value) {
+            var v = String(value || '').trim();
+            return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : '#00A4DC';
+        }
+
+        function uploadUrl() {
+            return ApiClient.getUrl('DirectPlayGuard/image');
+        }
+
+        function unwrap(response) {
+            if (response && typeof response.json === 'function') return response.json();
+            return response;
+        }
+
+        function setStatus(text) {
+            byId('ImageStatus').textContent = text || '';
+        }
+
+        function updatePreview() {
+            if (!currentConfig) return;
+
+            var mode = byId('ImageMode').value;
+            var img = byId('ImagePreview');
+            var empty = byId('ImagePreviewEmpty');
+            var url = '';
+
+            if (mode === 'upload' && currentConfig.UploadedImageFileName) {
+                url = uploadUrl() + '?v=' + Date.now();
+            } else if (mode === 'url') {
+                url = byId('ImageUrl').value.trim();
+            }
+
+            img.style.maxHeight = clampNumber(byId('ImageMaxHeight').value, 80, 600, 260) + 'px';
+            img.style.objectFit = byId('ImageFit').value === 'cover' ? 'cover' : 'contain';
+            img.style.borderRadius = clampNumber(byId('ImageCornerRadius').value, 0, 60, 12) + 'px';
+
+            if (url) {
+                img.src = url;
+                img.style.display = 'block';
+                empty.style.display = 'none';
+            } else {
+                img.removeAttribute('src');
+                img.style.display = 'none';
+                empty.style.display = '';
+            }
+        }
+
+        function load() {
+            Dashboard.showLoadingMsg();
+            ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                currentConfig = cfg;
+
+                byId('Enabled').checked = cfg.Enabled !== false;
+                byId('DisableVideoTranscoding').checked = cfg.DisableVideoTranscoding !== false;
+                byId('DisableAudioTranscoding').checked = cfg.DisableAudioTranscoding !== false;
+                byId('DisableRemuxing').checked = cfg.DisableRemuxing === true;
+                byId('ApplyToAdministrators').checked = cfg.ApplyToAdministrators !== false;
+
+                byId('EnableWebMessage').checked = cfg.EnableWebMessage !== false;
+                byId('MessageTitle').value = cfg.MessageTitle || '';
+                byId('MessageText').value = cfg.MessageText || '';
+                byId('ShowRecommendedApps').checked = cfg.ShowRecommendedApps !== false;
+                byId('RecommendedApps').value = cfg.RecommendedApps || '';
+                byId('HelpUrl').value = cfg.HelpUrl || '';
+                byId('FooterText').value = cfg.FooterText || '';
+
+                byId('ImageMode').value = cfg.ImageMode || 'none';
+                byId('ImageUrl').value = cfg.ImageUrl || '';
+                byId('ImageMaxHeight').value = cfg.ImageMaxHeight || 260;
+                byId('ImageFit').value = cfg.ImageFit === 'cover' ? 'cover' : 'contain';
+                byId('ImageCornerRadius').value = Number.isFinite(cfg.ImageCornerRadius) ? cfg.ImageCornerRadius : 12;
+
+                byId('ModalWidth').value = cfg.ModalWidth || 640;
+                byId('TextAlignment').value = cfg.TextAlignment === 'left' ? 'left' : 'center';
+                var color = normalizedColor(cfg.AccentColor);
+                byId('AccentColor').value = color;
+                byId('AccentColorPicker').value = color.toLowerCase();
+
+                setStatus(cfg.UploadedImageFileName ? ('Uploaded: ' + cfg.UploadedImageFileName) : 'No uploaded image');
+                updatePreview();
+                Dashboard.hideLoadingMsg();
+            }, function () {
+                Dashboard.hideLoadingMsg();
+            });
+        }
+
+        page.addEventListener('pageshow', load);
+
+        ['ImageMode','ImageUrl','ImageFit','ImageMaxHeight','ImageCornerRadius'].forEach(function (id) {
+            byId(id).addEventListener('change', updatePreview);
+            byId(id).addEventListener('input', updatePreview);
+        });
+
+        byId('AccentColorPicker').addEventListener('input', function () {
+            byId('AccentColor').value = byId('AccentColorPicker').value.toUpperCase();
+        });
+
+        byId('AccentColor').addEventListener('input', function () {
+            var c = normalizedColor(byId('AccentColor').value);
+            if (/^#[0-9a-fA-F]{6}$/.test(byId('AccentColor').value.trim())) {
+                byId('AccentColorPicker').value = c.toLowerCase();
+            }
+        });
+
+        byId('UploadImageButton').addEventListener('click', function () {
+            var input = byId('ImageUpload');
+            if (!input.files || !input.files.length) {
+                setStatus('Choose an image or GIF first.');
+                return;
+            }
+
+            var file = input.files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                setStatus('That file is larger than 10 MB.');
+                return;
+            }
+
+            Dashboard.showLoadingMsg();
+            var data = new FormData();
+            data.append('file', file);
+
+            var promise = typeof ApiClient.fetch === 'function'
+                ? ApiClient.fetch(uploadUrl(), { method:'POST', body:data }).then(unwrap)
+                : ApiClient.ajax({
+                    type:'POST',
+                    url:uploadUrl(),
+                    data:data,
+                    processData:false,
+                    contentType:false,
+                    dataType:'json'
+                });
+
+            promise.then(function (result) {
+                input.value = '';
+                setStatus('Upload complete.');
+                return ApiClient.getPluginConfiguration(pluginId);
+            }).then(function (cfg) {
+                currentConfig = cfg;
+                byId('ImageMode').value = 'upload';
+                setStatus(cfg.UploadedImageFileName ? ('Uploaded: ' + cfg.UploadedImageFileName) : 'Upload complete.');
+                updatePreview();
+                Dashboard.hideLoadingMsg();
+            }).catch(function (err) {
+                console.error('Direct Play Guard image upload failed', err);
+                setStatus('Upload failed. Use PNG, JPG, GIF, or WebP under 10 MB.');
+                Dashboard.hideLoadingMsg();
+            });
+        });
+
+        byId('RemoveImageButton').addEventListener('click', function () {
+            Dashboard.showLoadingMsg();
+
+            var promise = typeof ApiClient.fetch === 'function'
+                ? ApiClient.fetch(uploadUrl(), { method:'DELETE' })
+                : ApiClient.ajax({ type:'DELETE', url:uploadUrl() });
+
+            Promise.resolve(promise).then(function () {
+                return ApiClient.getPluginConfiguration(pluginId);
+            }).then(function (cfg) {
+                currentConfig = cfg;
+                setStatus('Uploaded image removed.');
+                updatePreview();
+                Dashboard.hideLoadingMsg();
+            }).catch(function (err) {
+                console.error('Direct Play Guard image removal failed', err);
+                setStatus('Could not remove the uploaded image.');
+                Dashboard.hideLoadingMsg();
+            });
+        });
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            Dashboard.showLoadingMsg();
+
+            ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                cfg.Enabled = byId('Enabled').checked;
+                cfg.DisableVideoTranscoding = byId('DisableVideoTranscoding').checked;
+                cfg.DisableAudioTranscoding = byId('DisableAudioTranscoding').checked;
+                cfg.DisableRemuxing = byId('DisableRemuxing').checked;
+                cfg.ApplyToAdministrators = byId('ApplyToAdministrators').checked;
+
+                cfg.EnableWebMessage = byId('EnableWebMessage').checked;
+                cfg.MessageTitle = byId('MessageTitle').value;
+                cfg.MessageText = byId('MessageText').value;
+                cfg.ShowRecommendedApps = byId('ShowRecommendedApps').checked;
+                cfg.RecommendedApps = byId('RecommendedApps').value;
+                cfg.HelpUrl = byId('HelpUrl').value;
+                cfg.FooterText = byId('FooterText').value;
+
+                cfg.ImageMode = byId('ImageMode').value;
+                cfg.ImageUrl = byId('ImageUrl').value;
+                cfg.ImageMaxHeight = clampNumber(byId('ImageMaxHeight').value, 80, 600, 260);
+                cfg.ImageFit = byId('ImageFit').value === 'cover' ? 'cover' : 'contain';
+                cfg.ImageCornerRadius = clampNumber(byId('ImageCornerRadius').value, 0, 60, 12);
+
+                cfg.ModalWidth = clampNumber(byId('ModalWidth').value, 360, 1000, 640);
+                cfg.TextAlignment = byId('TextAlignment').value === 'left' ? 'left' : 'center';
+                cfg.AccentColor = normalizedColor(byId('AccentColor').value);
+
+                ApiClient.updatePluginConfiguration(pluginId, cfg).then(function (result) {
+                    currentConfig = cfg;
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                });
+            });
+
+            return false;
+        });
+    })();
+    </script>
+</div>
+</body>
+</html>
