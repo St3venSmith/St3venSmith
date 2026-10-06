@@ -75,6 +75,8 @@ jobs:
           set -euo pipefail
           cp Jellyfin.Plugin.DirectPlayGuard/patches/WebInjectionStartupFilter.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/WebInjectionStartupFilter.cs
+          cp Jellyfin.Plugin.DirectPlayGuard/patches/ClientController.cs \
+            /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Api/ClientController.cs
           cp Jellyfin.Plugin.DirectPlayGuard/patches/FileTransformationIntegration.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Web/FileTransformationIntegration.cs
           cp Jellyfin.Plugin.DirectPlayGuard/patches/PluginServiceRegistrator.cs \
@@ -82,7 +84,7 @@ jobs:
           cp Jellyfin.Plugin.DirectPlayGuard/patches/PolicyEnforcementService.cs \
             /tmp/directplayguard-src/Jellyfin.Plugin.DirectPlayGuard/Services/PolicyEnforcementService.cs
 
-      - name: Apply Jellyfin 12 playback error fix and version
+      - name: Set plugin version and build dependencies
         shell: bash
         run: |
           set -euo pipefail
@@ -110,105 +112,6 @@ jobs:
 
           csproj.write_text(project, encoding="utf-8")
 
-          controller = root / "Api" / "ClientController.cs"
-          source = controller.read_text(encoding="utf-8")
-          needle = """  try {
-              const originalOpen = XMLHttpRequest.prototype.open;
-          """
-
-          patch = r'''  function patchPlaybackErrorDialog(dialog) {
-            if (!dialog || dialog.dataset.directPlayGuardPatched === '1') return false;
-
-            const titleEl = dialog.querySelector('.formDialogHeaderTitle');
-            const textEl = dialog.querySelector('.text');
-            if (!titleEl || !textEl) return false;
-
-            const titleText = (titleEl.textContent || '').trim().toLowerCase();
-            const bodyText = (textEl.textContent || '').trim().toLowerCase();
-
-            const looksLikePlaybackError =
-              titleText === 'playback error' || titleText.includes('playback');
-
-            const looksLikeCompatibilityFailure =
-              bodyText.includes('not supported by this client') ||
-              bodyText.includes('not compatible with the media') ||
-              bodyText.includes("isn't compatible with the media") ||
-              bodyText.includes('not sending a compatible media format');
-
-            if (!looksLikePlaybackError || !looksLikeCompatibilityFailure) return false;
-
-            dialog.dataset.directPlayGuardPatched = '1';
-            titleEl.textContent = cfg.title || 'Playback not supported on this device';
-            textEl.textContent = '';
-
-            const message = document.createElement('p');
-            message.textContent = cfg.message || 'This server does not transcode media. Use a compatible Jellyfin app and Original/Maximum playback quality.';
-            message.style.cssText = 'margin:0 0 16px;line-height:1.55';
-            textEl.appendChild(message);
-
-            if (cfg.apps) {
-              const apps = document.createElement('div');
-              apps.textContent = cfg.apps;
-              apps.style.cssText = 'white-space:pre-wrap;line-height:1.55;margin:0 0 16px;padding:12px 14px;border-radius:8px;background:rgba(255,255,255,.07)';
-              textEl.appendChild(apps);
-            }
-
-            if (cfg.helpUrl) {
-              const link = document.createElement('a');
-              link.textContent = 'Get recommended Jellyfin apps';
-              link.href = cfg.helpUrl;
-              link.target = '_blank';
-              link.rel = 'noopener noreferrer';
-              link.style.cssText = 'display:inline-block;margin-top:2px;text-decoration:none;font-weight:600';
-              textEl.appendChild(link);
-            }
-
-            const button = dialog.querySelector('.btnOption');
-            if (button) button.textContent = 'Close';
-            return true;
-          }
-
-          function patchExistingPlaybackDialogs(root) {
-            try {
-              if (root && root.matches && root.matches('.formDialog')) patchPlaybackErrorDialog(root);
-              const dialogs = (root || document).querySelectorAll
-                ? (root || document).querySelectorAll('.formDialog')
-                : [];
-              for (const dialog of dialogs) patchPlaybackErrorDialog(dialog);
-            } catch (_) { }
-          }
-
-          try {
-            const startDialogObserver = function () {
-              patchExistingPlaybackDialogs(document);
-              if (!document.body) return;
-
-              const observer = new MutationObserver(function (mutations) {
-                for (const mutation of mutations) {
-                  for (const node of mutation.addedNodes || []) {
-                    if (node && node.nodeType === 1) patchExistingPlaybackDialogs(node);
-                  }
-                }
-              });
-
-              observer.observe(document.body, { childList: true, subtree: true });
-            };
-
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', startDialogObserver, { once: true });
-            } else {
-              startDialogObserver();
-            }
-          } catch (_) { }
-
-          '''
-
-          if "function patchPlaybackErrorDialog" not in source:
-              if needle not in source:
-                  raise SystemExit("Could not find ClientController insertion point")
-              source = source.replace(needle, patch + needle, 1)
-
-          controller.write_text(source, encoding="utf-8")
           print(f"Prepared Direct Play Guard {version}")
           PY
 
