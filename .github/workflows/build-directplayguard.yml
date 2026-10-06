@@ -13,6 +13,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: direct-play-guard-publish
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
