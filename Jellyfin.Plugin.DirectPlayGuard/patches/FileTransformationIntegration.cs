@@ -16,6 +16,7 @@ namespace Jellyfin.Plugin.DirectPlayGuard.Web;
 public static class FileTransformationIntegration
 {
     public const string IndexTransformationId = "75f5d73c-fde5-4a74-9f99-2cf19da26977";
+    public const string LocalizationCacheRepairId = "3cc0d4e8-403a-4f08-9eb4-77d74be83e70";
 
     private static int _registered;
 
@@ -59,9 +60,27 @@ public static class FileTransformationIntegration
                 },
             });
 
+            // Cache-recovery only: earlier Direct Play Guard builds modified
+            // Jellyfin localization chunks. Some browsers may still hold those
+            // transformed responses by ETag. This transformation does NOT touch
+            // any translation value; it only appends an inert JS comment so File
+            // Transformation generates a fresh ETag and serves the clean upstream
+            // localization chunk back to affected clients.
+            register.Invoke(null, new object?[]
+            {
+                new JObject
+                {
+                    ["id"] = LocalizationCacheRepairId,
+                    ["fileNamePattern"] = "^[A-Za-z0-9_-]+-json\\.[A-Za-z0-9]+\\.chunk\\.js$",
+                    ["callbackAssembly"] = typeof(FileTransformationIntegration).Assembly.FullName,
+                    ["callbackClass"] = typeof(FileTransformationIntegration).FullName,
+                    ["callbackMethod"] = nameof(RepairLocalizationChunkCache),
+                },
+            });
+
             Interlocked.Exchange(ref _registered, 1);
             logger.LogInformation(
-                "Direct Play Guard registered its exact index.html transformation with File Transformation");
+                "Direct Play Guard registered index.html injection and safe localization cache recovery with File Transformation");
             return true;
         }
         catch (Exception ex)
@@ -98,6 +117,24 @@ public static class FileTransformationIntegration
             tag + "$1",
             RegexOptions.IgnoreCase,
             TimeSpan.FromSeconds(1));
+    }
+
+    /// <summary>
+    /// Leaves Jellyfin's localization data completely unchanged while forcing a
+    /// fresh ETag for clients that cached the corrupted response produced by an
+    /// older Direct Play Guard build.
+    /// </summary>
+    public static string RepairLocalizationChunkCache(FileTransformationPayload payload)
+    {
+        var contents = payload?.Contents ?? string.Empty;
+        const string marker = "/* direct-play-guard-locale-cache-repair-v1 */";
+
+        if (contents.Contains(marker, StringComparison.Ordinal))
+        {
+            return contents;
+        }
+
+        return contents + "\n" + marker + "\n";
     }
 
     private static Assembly? FindAssembly()
